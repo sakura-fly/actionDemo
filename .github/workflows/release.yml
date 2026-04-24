@@ -7,6 +7,22 @@ on:
       - master
     tags:
       - 'v*'
+  workflow_dispatch:
+    inputs:
+      custom_tag:
+        description: 'Custom release tag (optional, leave empty to use pom.xml version)'
+        required: false
+        default: ''
+      include_piliplus_commits:
+        description: 'Include PiliPlus commits in release notes'
+        required: false
+        type: boolean
+        default: true
+      include_piliplus_release:
+        description: 'Include PiliPlus latest release info'
+        required: false
+        type: boolean
+        default: true
 
 permissions:
   contents: write
@@ -81,12 +97,8 @@ jobs:
               echo ""
           #              echo "$RELEASE_TAG" > "$RELEASE_FILE"
             fi
-               
-               echo "RELEASE_BODY"
-               echo "$RELEASE_BODY"
-               echo "11111"
           
-          # If no updates, add default message
+            # If no updates, add default message
             if [ -z "$COMMITS" ] && ([ "$RELEASE_TAG" = "$LAST_RELEASE" ] || [ -z "$RELEASE_TAG" ] || [ -z "$RELEASE_BODY" ]); then
               echo "Initial release"
             fi
