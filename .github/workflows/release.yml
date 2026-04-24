@@ -59,6 +59,8 @@ jobs:
           fi
           echo "Release body: $RELEASE_BODY"
           
+          echo "-----"
+          
           RELEASE_FILE="${{ github.workspace }}/.piliplus_last_release"
           if [ -f "$RELEASE_FILE" ]; then
             LAST_RELEASE=$(cat "$RELEASE_FILE")
