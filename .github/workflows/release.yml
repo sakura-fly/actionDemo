@@ -79,10 +79,14 @@ jobs:
               echo ""
               echo "$RELEASE_BODY"
               echo ""
-              echo "$RELEASE_TAG" > "$RELEASE_FILE"
+          #              echo "$RELEASE_TAG" > "$RELEASE_FILE"
             fi
+               
+               echo "RELEASE_BODY"
+               echo "$RELEASE_BODY"
+               echo "11111"
           
-            # If no updates, add default message
+          # If no updates, add default message
             if [ -z "$COMMITS" ] && ([ "$RELEASE_TAG" = "$LAST_RELEASE" ] || [ -z "$RELEASE_TAG" ] || [ -z "$RELEASE_BODY" ]); then
               echo "Initial release"
             fi
