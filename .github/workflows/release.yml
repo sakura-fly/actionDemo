@@ -79,7 +79,7 @@ jobs:
           
             if [ "$RELEASE_TAG" != "$LAST_RELEASE" ] && [ -n "$RELEASE_TAG" ] && [ -n "$RELEASE_BODY" ]; then
               echo "## PiliPlus New Release: $RELEASE_NAME"
-              echo ""
+              echo "1111"
               echo "$RELEASE_BODY"
               echo "^^^"
               echo "$RELEASE_TAG" > "$RELEASE_FILE"
