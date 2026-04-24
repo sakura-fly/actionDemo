@@ -1,0 +1,94 @@
+name: Build and Upload to Release
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    tags:
+      - 'v*'
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Get version from pom.xml
+        id: get_version
+        run: |
+          VERSION=$(mvn -f hello/pom.xml help:evaluate -Dexpression=project.version -q -DforceStdout)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Project version: $VERSION"
+
+      - name: Generate release notes
+        id: generate_notes
+        run: |
+          NOTES=""
+          
+          # Get PiliPlus latest commit date
+          PILIPLUS_COMMIT_DATE=$(curl -s https://api.github.com/repos/bggRGjQaUbCoE/PiliPlus/commits/main | python3 -c "import sys, json; data=json.load(sys.stdin); print(data['commit']['committer']['date'])")
+          echo "PiliPlus latest commit date: $PILIPLUS_COMMIT_DATE"
+          
+          # Part 1: Current repository commits after PiliPlus latest commit (excluding merge commits)
+          COMMITS=$(git log --no-merges --pretty=format:"- %s (%h)" --since="$PILIPLUS_COMMIT_DATE" HEAD 2>/dev/null || echo "")
+          
+          if [ -n "$COMMITS" ]; then
+            NOTES+="## What's Changed\n\n"
+            NOTES+="$COMMITS"
+            NOTES+="\n\n"
+          fi
+          
+          # Part 2: Check PiliPlus for new releases
+          LATEST_RELEASE=$(curl -s https://api.github.com/repos/bggRGjQaUbCoE/PiliPlus/releases/latest)
+          RELEASE_TAG=$(echo "$LATEST_RELEASE" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+          RELEASE_BODY=$(echo "$LATEST_RELEASE" | python3 -c "import sys, json; data=json.load(sys.stdin); print(data.get('body', ''))" 2>/dev/null || echo "")
+          RELEASE_NAME=$(echo "$LATEST_RELEASE" | grep '"name":' | sed -E 's/.*"([^"]+)".*/\1/')
+          
+          RELEASE_FILE="${{ github.workspace }}/.piliplus_last_release"
+          if [ -f "$RELEASE_FILE" ]; then
+            LAST_RELEASE=$(cat "$RELEASE_FILE")
+          else
+            LAST_RELEASE=""
+          fi
+          
+          if [ "$RELEASE_TAG" != "$LAST_RELEASE" ] && [ -n "$RELEASE_TAG" ] && [ -n "$RELEASE_BODY" ]; then
+            NOTES+="## PiliPlus New Release: $RELEASE_NAME\n\n"
+            NOTES+="$RELEASE_BODY"
+            NOTES+="\n\n"
+            echo "$RELEASE_TAG" > "$RELEASE_FILE"
+          fi
+          
+          # If no updates, add default message
+          if [ -z "$NOTES" ]; then
+            NOTES="Initial release"
+          fi
+          
+          echo "$NOTES" > release_notes.md
+          cat release_notes.md
+
+      - name: Build with Maven
+        run: mvn clean package -f hello/pom.xml
+
+      - name: Create Release and Upload JAR
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ steps.get_version.outputs.version }}
+          release_name: Release v${{ steps.get_version.outputs.version }}
+          body_path: release_notes.md
+          draft: false
+          prerelease: false
+          files: ./hello/target/hello-${{ steps.get_version.outputs.version }}.jar
