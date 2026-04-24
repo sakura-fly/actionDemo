@@ -81,7 +81,7 @@ jobs:
               echo "## PiliPlus New Release: $RELEASE_NAME"
               echo ""
               echo "$RELEASE_BODY"
-              echo ""
+              echo "^^^"
               echo "$RELEASE_TAG" > "$RELEASE_FILE"
             fi
           
@@ -91,7 +91,9 @@ jobs:
             fi
           } > release_notes.md
           
+          echo "release_notes.md"
           cat release_notes.md
+          echo "-----"
 
       - name: Build with Maven
         run: mvn clean package -f hello/pom.xml
