@@ -38,20 +38,12 @@ jobs:
       - name: Generate release notes
         id: generate_notes
         run: |
-          NOTES=""
-          
           # Get PiliPlus latest commit date
           PILIPLUS_COMMIT_DATE=$(curl -s https://api.github.com/repos/bggRGjQaUbCoE/PiliPlus/commits/main | python3 -c "import sys, json; data=json.load(sys.stdin); print(data['commit']['committer']['date'])")
           echo "PiliPlus latest commit date: $PILIPLUS_COMMIT_DATE"
           
           # Part 1: Current repository commits after PiliPlus latest commit (excluding merge commits)
           COMMITS=$(git log --no-merges --pretty=format:"- %s (%h)" --since="$PILIPLUS_COMMIT_DATE" HEAD 2>/dev/null || echo "")
-          
-          if [ -n "$COMMITS" ]; then
-            NOTES+="## What's Changed\n\n"
-            NOTES+="$COMMITS"
-            NOTES+="\n\n"
-          fi
           
           # Part 2: Check PiliPlus for new releases
           LATEST_RELEASE=$(curl -s https://api.github.com/repos/bggRGjQaUbCoE/PiliPlus/releases/latest)
@@ -66,19 +58,29 @@ jobs:
             LAST_RELEASE=""
           fi
           
-          if [ "$RELEASE_TAG" != "$LAST_RELEASE" ] && [ -n "$RELEASE_TAG" ] && [ -n "$RELEASE_BODY" ]; then
-            NOTES+="## PiliPlus New Release: $RELEASE_NAME\n\n"
-            NOTES+="$RELEASE_BODY"
-            NOTES+="\n\n"
-            echo "$RELEASE_TAG" > "$RELEASE_FILE"
-          fi
+          # Generate release notes with proper formatting
+          {
+            if [ -n "$COMMITS" ]; then
+              echo "## What's Changed"
+              echo ""
+              echo "$COMMITS"
+              echo ""
+            fi
           
-          # If no updates, add default message
-          if [ -z "$NOTES" ]; then
-            NOTES="Initial release"
-          fi
+            if [ "$RELEASE_TAG" != "$LAST_RELEASE" ] && [ -n "$RELEASE_TAG" ] && [ -n "$RELEASE_BODY" ]; then
+              echo "## PiliPlus New Release: $RELEASE_NAME"
+              echo ""
+              echo "$RELEASE_BODY"
+              echo ""
+              echo "$RELEASE_TAG" > "$RELEASE_FILE"
+            fi
           
-          echo "$NOTES" > release_notes.md
+            # If no updates, add default message
+            if [ -z "$COMMITS" ] && ([ "$RELEASE_TAG" = "$LAST_RELEASE" ] || [ -z "$RELEASE_TAG" ] || [ -z "$RELEASE_BODY" ]); then
+              echo "Initial release"
+            fi
+          } > release_notes.md
+          
           cat release_notes.md
 
       - name: Build with Maven
