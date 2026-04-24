@@ -57,6 +57,7 @@ jobs:
           else
             RELEASE_BODY=""
           fi
+          echo "Release body: $RELEASE_BODY"
           
           RELEASE_FILE="${{ github.workspace }}/.piliplus_last_release"
           if [ -f "$RELEASE_FILE" ]; then
