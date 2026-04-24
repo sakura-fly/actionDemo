@@ -49,20 +49,14 @@ jobs:
           LATEST_RELEASE=$(curl -s https://api.github.com/repos/bggRGjQaUbCoE/PiliPlus/releases/latest)
           RELEASE_TAG=$(echo "$LATEST_RELEASE" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
           RELEASE_BODY_RAW=$(echo "$LATEST_RELEASE" | python3 -c "import sys, json; data=json.load(sys.stdin); print(data.get('body', ''))" 2>/dev/null || echo "")
-          RELEASE_NAME=$(echo "$LATEST_RELEASE" | grep '"name":' | sed -E 's/.*"([^"]+)".*/\1/')
+          RELEASE_NAME=$(echo "$LATEST_RELEASE" | python3 -c "import sys, json; data=json.load(sys.stdin); print(data.get('name', '').split('\n')[0])" 2>/dev/null || echo "")
           
-          echo "RELEASE_NAME"
-          echo "$RELEASE_NAME"
-          echo "------"
           # Filter out Assets and Contributors sections
           if [ -n "$RELEASE_BODY_RAW" ]; then
             RELEASE_BODY=$(echo "$RELEASE_BODY_RAW" | sed '/^### Contributors$/,$d' | sed '/^Assets/d' | sed '/^Loading$/d' | sed '/^### Uh oh!$/,$d' | sed '/^All reactions$/,$d')
           else
             RELEASE_BODY=""
           fi
-          echo "Release body: $RELEASE_BODY"
-          
-          echo "-----"
           
           RELEASE_FILE="${{ github.workspace }}/.piliplus_last_release"
           if [ -f "$RELEASE_FILE" ]; then
@@ -82,9 +76,9 @@ jobs:
           
             if [ "$RELEASE_TAG" != "$LAST_RELEASE" ] && [ -n "$RELEASE_TAG" ] && [ -n "$RELEASE_BODY" ]; then
               echo "## PiliPlus New Release: $RELEASE_NAME"
-              echo "1111"
+              echo ""
               echo "$RELEASE_BODY"
-              echo "^^^"
+              echo ""
               echo "$RELEASE_TAG" > "$RELEASE_FILE"
             fi
           
@@ -94,9 +88,7 @@ jobs:
             fi
           } > release_notes.md
           
-          echo "release_notes.md"
           cat release_notes.md
-          echo "-----"
 
       - name: Build with Maven
         run: mvn clean package -f hello/pom.xml
