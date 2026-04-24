@@ -51,6 +51,9 @@ jobs:
           RELEASE_BODY_RAW=$(echo "$LATEST_RELEASE" | python3 -c "import sys, json; data=json.load(sys.stdin); print(data.get('body', ''))" 2>/dev/null || echo "")
           RELEASE_NAME=$(echo "$LATEST_RELEASE" | grep '"name":' | sed -E 's/.*"([^"]+)".*/\1/')
           
+          echo "RELEASE_NAME"
+          echo "$RELEASE_NAME"
+          echo "------"
           # Filter out Assets and Contributors sections
           if [ -n "$RELEASE_BODY_RAW" ]; then
             RELEASE_BODY=$(echo "$RELEASE_BODY_RAW" | sed '/^### Contributors$/,$d' | sed '/^Assets/d' | sed '/^Loading$/d' | sed '/^### Uh oh!$/,$d' | sed '/^All reactions$/,$d')
